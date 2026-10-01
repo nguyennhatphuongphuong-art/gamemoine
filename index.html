@@ -45,6 +45,22 @@ button{font:inherit}
 .shopGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px 12px}.item{background:#122235;border:1px solid #34536e;border-radius:12px;padding:8px;text-align:center}.item>div{font-size:30px;height:40px}.item b{display:block;font-size:10px}.item small{display:block;color:#9fb0c0;font-size:9px;margin:4px 0}.item button{width:100%;border:1px solid #466c8d;background:#1b3850;color:#fff;border-radius:7px;padding:7px;font-size:9px;font-weight:900}
 .rel{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #263b4d;font-size:11px}.rel span{color:#91b9e2}.memoryList{display:flex;flex-wrap:wrap;gap:5px}.memoryList span{background:#182b3d;padding:5px 7px;border-radius:7px;font-size:9px}.bigMoney{font-size:28px;font-weight:950}.activityGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px}.activityGrid button{margin:0}.ambientNPC{margin:15px;background:#132336;border:1px solid #365671;border-radius:12px;padding:10px;display:flex;gap:10px;align-items:center;font-size:11px}.ambientNPC img{height:100px;width:55px;object-fit:contain}.message{margin:15px;background:#122235;border:1px solid #34536e;border-radius:14px;padding:14px}.message button{background:#19344b}
 .toast{position:fixed;z-index:100;left:50%;top:14px;transform:translateX(-50%);background:#f2f5f8;color:#12202b;border-radius:10px;padding:9px 12px;font-size:11px;font-weight:900;display:none;max-width:90%;box-shadow:0 10px 25px #0008}.toast.show{display:block}.build{position:fixed;right:7px;top:5px;z-index:99;font-size:7px;color:#75889a;background:#07131dcc;padding:3px 5px;border-radius:5px}
+
+.artMap{background:#14202b!important}
+.mapBackdrop{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;image-rendering:pixelated}
+.mapShade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.06),rgba(0,0,0,.34))}
+.workActor{position:absolute;left:38%;bottom:5%;width:110px;height:160px;z-index:4}
+.workActor img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
+.workCustomer{position:absolute;right:7%;bottom:5%;width:85px;height:145px;z-index:4}
+.workCustomer img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
+.stageBadge{position:absolute;left:10px;right:10px;top:10px;z-index:6;background:#07131de8;border:1px solid #4c7693;border-radius:12px;padding:8px 10px}
+.stageBadge b{display:block;font-size:12px}.stageBadge span{display:block;color:#b7c5d1;font-size:10px;margin-top:2px}
+.sequence{display:flex;gap:5px;overflow:hidden;margin:8px 0}
+.sequence span{flex:1;min-width:0;text-align:center;padding:7px 3px;border-radius:7px;background:#18283a;color:#8294a5;font-size:7px;border:1px solid #29445c}
+.sequence span.active{background:#214e6b;color:#fff;border-color:#5c8aae}
+.sequence span.done{background:#1b493d;color:#b8f0dd;border-color:#3d806d}
+.primaryAction{grid-column:1/-1!important;width:100%;padding:13px!important;background:#235473!important;border-color:#5b86a6!important;font-size:12px!important}
+.stageHelp{font-size:11px!important;margin:7px 0!important}
 @media(min-width:700px){#app{box-shadow:0 0 0 1px #1a3348,0 20px 60px #000}.build{right:calc(50% - 235px)}}
 </style>
 </head>
@@ -255,31 +271,73 @@ function workScene(){
   const j=JOBS[S.job];
   const elapsed=Math.min(300,Math.floor((Date.now()-workStart)/1000));
   const pct=Math.floor(elapsed/3);
+  const stage=shiftStage(S.job);
+  const bg={pho:"map_quan_pho.webp",office:"map_van_phong.webp",shipper:"map_khu_shipper.webp"}[S.job];
+  const actor={pho:"anim_pho_work.webp",office:"anim_office_work.webp",shipper:"anim_delivery.webp"}[S.job];
   return `${statusHUD()}<main class="world workWorld">
     ${worldHeader(`${j.icon} ${j.name}`,"CA LÀM 5 PHÚT · HOME ĐANG KHÓA")}
-    <div class="workMap">
-      <div class="workProps">${S.job==="pho"?"🍜 🪑 🥣":S.job==="office"?"💻 🗂️ ☕":"🛵 📦 🏢"}</div>
-      <div class="workChar">${img(S.job==="pho"?"anim_pho_work.webp":S.job==="office"?"anim_office_work.webp":"anim_delivery.webp")}</div>
-      <div class="workNPC">${img("char_khach_hang.webp")}</div>
+    <div class="workMap artMap">
+      ${img(bg,"mapBackdrop")}
+      <div class="mapShade"></div>
+      <div class="workActor">${img(actor)}</div>
+      <div class="workCustomer">${img("char_khach_hang.webp")}</div>
+      <div class="stageBadge"><b>${stage.label}</b><span>${stage.help}</span></div>
     </div>
     <div class="shiftPanel">
       <div class="shiftTop"><b>CA ĐANG CHẠY</b><strong>${pad(Math.floor(elapsed/60))}:${pad(elapsed%60)}</strong></div>
       <div class="bar"><i style="width:${pct}%"></i></div>
-      <p>${jobInstruction(S.job)}</p>
+      <div class="sequence">${sequenceMarkup(S.job)}</div>
+      <p class="stageHelp">${stage.detail}</p>
       <div class="jobActions">${jobButtons(S.job)}</div>
       <div class="locked">🔒 HOME · Khóa cho tới khi đủ 5:00</div>
     </div>
   </main>`;
 }
-function jobInstruction(job){
-  if(job==="pho") return "Khách gọi món → nhận order → chuẩn bị → mang món → dọn bàn → thu tiền.";
-  if(job==="office") return "Nhận task → làm → kiểm tra → sửa → nộp.";
-  return "Nhận đơn → lấy hàng → di chuyển → giao → xác nhận.";
+
+function shiftStage(job){
+  const st=S.shift?.stage;
+  const map={
+    pho:{
+      order:{label:"1 · NHẬN ORDER",help:"Khách vừa gọi món",detail:"Nhận đúng order trước khi bắt đầu chuẩn bị."},
+      prepare:{label:"2 · CHUẨN BỊ MÓN",help:"Đang vào bếp",detail:"Chuẩn bị đúng món khách đã gọi."},
+      serve:{label:"3 · PHỤC VỤ",help:"Món đã sẵn sàng",detail:"Mang món tới đúng khách/bàn."},
+      clean:{label:"4 · DỌN BÀN",help:"Khách đã ăn xong",detail:"Dọn bàn để sẵn sàng cho lượt khách tiếp theo."},
+      collect:{label:"5 · THU TIỀN",help:"Hoàn tất lượt phục vụ",detail:"Thu tiền. Sau đó mới có thể nhận order tiếp theo."}
+    },
+    office:{
+      task:{label:"1 · NHẬN TASK",help:"Task mới",detail:"Nhận task trước khi bắt đầu làm."},
+      work:{label:"2 · LÀM TASK",help:"Đang xử lý",detail:"Hoàn thành phần việc được giao."},
+      check:{label:"3 · KIỂM TRA",help:"Rà soát",detail:"Kiểm tra lỗi trước khi nộp."},
+      fix:{label:"4 · SỬA",help:"Có điểm cần chỉnh",detail:"Sửa phần chưa đạt yêu cầu."},
+      submit:{label:"5 · SUBMIT",help:"Nộp bài",detail:"Nộp task. Sau đó có thể nhận task mới."}
+    },
+    shipper:{
+      order:{label:"1 · NHẬN ĐƠN",help:"Đơn mới",detail:"Nhận đơn trước khi tới điểm lấy hàng."},
+      pickup:{label:"2 · LẤY HÀNG",help:"Đã có địa chỉ lấy",detail:"Tới quầy và lấy đúng kiện hàng."},
+      move:{label:"3 · DI CHUYỂN",help:"Đang giao",detail:"Di chuyển tới địa chỉ khách."},
+      deliver:{label:"4 · GIAO HÀNG",help:"Tới nơi",detail:"Giao đúng đơn cho khách."},
+      confirm:{label:"5 · XÁC NHẬN",help:"Hoàn tất",detail:"Xác nhận giao thành công và nhận tiền."}
+    }
+  };
+  return map[job][st] || map[job][Object.keys(map[job])[0]];
 }
+function sequenceMarkup(job){
+  const seq={
+    pho:[["order","NHẬN ORDER"],["prepare","CHUẨN BỊ MÓN"],["serve","PHỤC VỤ"],["clean","DỌN BÀN"],["collect","THU TIỀN"]],
+    office:[["task","NHẬN TASK"],["work","LÀM TASK"],["check","KIỂM TRA"],["fix","SỬA"],["submit","SUBMIT"]],
+    shipper:[["order","NHẬN ĐƠN"],["pickup","LẤY HÀNG"],["move","DI CHUYỂN"],["deliver","GIAO HÀNG"],["confirm","XÁC NHẬN"]]
+  }[job];
+  return seq.map(([id,label],i)=>`<span class="${S.shift?.stage===id?"active":S.shift?.completedSteps>i?"done":""}">${i+1}. ${label}</span>`).join("");
+}
+function jobInstruction(job){ return shiftStage(job).detail; }
 function jobButtons(job){
-  if(job==="pho") return `<button data-work="order">NHẬN ORDER</button><button data-work="serve">MANG MÓN</button><button data-work="clean">DỌN BÀN</button><button data-work="collect">THU TIỀN</button>`;
-  if(job==="office") return `<button data-work="task">NHẬN TASK</button><button data-work="work">LÀM</button><button data-work="check">KIỂM TRA</button><button data-work="submit">SUBMIT</button>`;
-  return `<button data-work="order">NHẬN ĐƠN</button><button data-work="pickup">LẤY HÀNG</button><button data-work="deliver">GIAO HÀNG</button><button data-work="confirm">XÁC NHẬN GIAO</button>`;
+  const stage=S.shift?.stage;
+  const labels={
+    pho:{order:"NHẬN ORDER",prepare:"CHUẨN BỊ MÓN",serve:"PHỤC VỤ",clean:"DỌN BÀN",collect:"THU TIỀN"},
+    office:{task:"NHẬN TASK",work:"LÀM TASK",check:"KIỂM TRA",fix:"SỬA TASK",submit:"SUBMIT"},
+    shipper:{order:"NHẬN ĐƠN",pickup:"LẤY HÀNG",move:"DI CHUYỂN",deliver:"GIAO HÀNG",confirm:"XÁC NHẬN GIAO"}
+  }[job];
+  return `<button class="primaryAction" data-work="${stage}">${labels[stage]}</button>`;
 }
 
 function phone(){
@@ -420,7 +478,15 @@ function action(a){
 }
 function startJob(id){
   if(!JOBS[id])return;
-  S.job=id;S.destination=JOBS[id].scene;S.scene="travel";S.shift={active:false,done:false,performance:70,earned:0};
+  S.job=id;
+  S.destination=JOBS[id].scene;
+  S.scene="travel";
+  S.shift={
+    active:false,done:false,performance:70,earned:0,
+    stage: id==="pho" ? "order" : id==="office" ? "task" : "order",
+    completedSteps:0,
+    lastAction:null
+  };
   save();render();
 }
 function startTravel(){
@@ -457,11 +523,30 @@ function renderWorkProgress(elapsed){
   if(t)t.textContent=`${pad(Math.floor(elapsed/60))}:${pad(elapsed%60)}`;
 }
 function workAction(a){
-  if(!S.shift?.active)return;
-  const bonus={order:2,serve:3,clean:2,collect:4,task:2,work:3,check:2,submit:4,pickup:2,deliver:3,confirm:4}[a]||1;
+  if(!S.shift?.active)return toast("Ca làm chưa sẵn sàng.");
+  if(a!==S.shift.stage)return toast("Chưa tới bước này.");
+  const next={
+    pho:{order:"prepare",prepare:"serve",serve:"clean",clean:"collect",collect:"order"},
+    office:{task:"work",work:"check",check:"fix",fix:"submit",submit:"task"},
+    shipper:{order:"pickup",pickup:"move",move:"deliver",deliver:"confirm",confirm:"order"}
+  }[S.job];
+  const bonus={order:2,prepare:3,serve:3,clean:2,collect:4,task:2,work:3,check:2,fix:3,submit:4,pickup:2,move:2,deliver:3,confirm:4}[a]||1;
   S.shift.performance=clamp(S.shift.performance+bonus,0,100);
-  toast("Đã thực hiện: "+a.toUpperCase());
+  S.shift.completedSteps=(S.shift.completedSteps+1)%5;
+  S.shift.lastAction=a;
+  S.shift.stage=next[a];
+  save(); render();
+  toast("✓ "+stageName(S.job,a));
 }
+function stageName(job,a){
+  const names={
+    pho:{order:"Đã nhận order",prepare:"Đã chuẩn bị món",serve:"Đã phục vụ",clean:"Đã dọn bàn",collect:"Đã thu tiền"},
+    office:{task:"Đã nhận task",work:"Đã làm task",check:"Đã kiểm tra",fix:"Đã sửa task",submit:"Đã submit"},
+    shipper:{order:"Đã nhận đơn",pickup:"Đã lấy hàng",move:"Đã di chuyển",deliver:"Đã giao hàng",confirm:"Đã xác nhận giao"}
+  };
+  return names[job][a];
+}
+
 function completeWork(){
   clearInterval(workTimer);workTimer=null;
   S.shift.active=false;S.shift.done=true;
